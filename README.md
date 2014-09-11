@@ -6,7 +6,7 @@ Objective-C Wrapper for C++ Myo.framework for OS X
 You need to add myo.framework from the Myo SDK to the Project, instructions for that can be found on the SDK.
 
 Here is an example of how you can get started:
-
+{
   // Create Myo Object
   Myo *aMyo = [[Myo alloc] initWithApplicationIdentifier:@"com.YourCompany.ExampleApp"];
     
@@ -43,3 +43,4 @@ Here is an example of how you can get started:
   - (void)myoOnConnect:(Myo *)myo firmwareVersion:(MyoFirmwareVersion *)firmware timestamp:(uint64_t)timestamp;
   - (void)myoOnArmRecognized:(Myo *)myo arm:(MyoArm)arm direction:(MyoDirection)direction timestamp:(uint64_t)timestamp;
   - (void)myo:(Myo *)myo onOrientationDataWithRoll:(int)roll pitch:(int)pitch yaw:(int)yaw timestamp:(uint64_t)timestamp;
+}
