@@ -1,7 +1,7 @@
 Myo-Objective-C-Wrapper-OS-X by ShirazO
 ============================
 
-Objective-C Wrapper for C++ Myo.framework for OS X
+<B>Objective-C Wrapper for C++ Myo.framework for OS X </B>
 
 You need to add myo.framework from the Myo SDK to the Project, instructions for that can be found on the SDK.
 
