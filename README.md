@@ -9,7 +9,8 @@ You need to add myo.framework from the Myo SDK to the Project, instructions for 
 
     // Create Myo Object
     Myo *aMyo = [[Myo alloc] initWithApplicationIdentifier:@"com.YourCompany.ExampleApp"];
-      
+    self.myo.delegate = self; // Set self as Delegate
+    
     // Create Block To Run Commands In Background Thread
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, (unsigned long)NULL), ^(void) {
       
@@ -22,7 +23,6 @@ You need to add myo.framework from the Myo SDK to the Project, instructions for 
       // Create Block To Run Commands on Main Thread
       dispatch_async(dispatch_get_main_queue(), ^(void) {
           
-          self.myo.delegate = self; // Set self as Delegate
           self.myo.updateTime = 1000; // Set the Update Time
           [self.myo startUpdate]; // Start Getting Updates From Myo (This Command Runs on Background Thread In Implemenation)
       });

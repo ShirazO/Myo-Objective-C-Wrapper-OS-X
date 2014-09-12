@@ -38,36 +38,48 @@ public:
         pitch_w = static_cast<int>((pitch + (float)M_PI/2.0f)/M_PI * 18);
         yaw_w = static_cast<int>((yaw + (float)M_PI)/(M_PI * 2.0f) * 18);
         
-        if ([_myo.delegate respondsToSelector:@selector(myo:onOrientationDataWithRoll:pitch:yaw:timestamp:)]) {
-            [_myo.delegate myo:_myo onOrientationDataWithRoll:roll_w pitch:pitch_w yaw:yaw_w timestamp:timestamp];
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myo:onOrientationDataWithRoll:pitch:yaw:timestamp:)]) {
+                [_myo.delegate myo:_myo onOrientationDataWithRoll:roll_w pitch:pitch_w yaw:yaw_w timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a paired Myo has provided new accelerometer data in units of g.
     void onAccelerometerData(Myo *myo, uint64_t timestamp, const myo::Vector3<float>&accel) {
         
         MyoVector *vector = [[MyoVector alloc] initWithX:accel.x() y:accel.y() z:accel.z()];
-        if ([_myo.delegate respondsToSelector:@selector(myo:onAccelerometerDataWithVector:timestamp:)]) {
-            [_myo.delegate myo:_myo onAccelerometerDataWithVector:vector timestamp:timestamp];
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myo:onAccelerometerDataWithVector:timestamp:)]) {
+                [_myo.delegate myo:_myo onAccelerometerDataWithVector:vector timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a paired Myo has provided new gyroscope data in units of deg/s.
     void onGyroscopeData(Myo *myo, uint64_t timestamp, const myo::Vector3<float>&gyro) {
         
         MyoVector *vector = [[MyoVector alloc] initWithX:gyro.x() y:gyro.y() z:gyro.z()];
-        if ([_myo.delegate respondsToSelector:@selector(myo:onGyroscopeDataWithVector:timestamp:)]) {
-            [_myo.delegate myo:_myo onGyroscopeDataWithVector:vector timestamp:timestamp];
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myo:onGyroscopeDataWithVector:timestamp:)]) {
+                [_myo.delegate myo:_myo onGyroscopeDataWithVector:vector timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a paired Myo has provided a new RSSI value.
     /// @see Myo::requestRssi() to request an RSSI value from the Myo.
     void onRssi(Myo *myo, uint64_t timestamp, int8_t rssi) {
         
-        if ([_myo.delegate respondsToSelector:@selector(myo:onRssi:timestamp:)]) {
-            [_myo.delegate myo:_myo onRssi:rssi timestamp:timestamp];
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myo:onRssi:timestamp:)]) {
+                [_myo.delegate myo:_myo onRssi:rssi timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a paired Myo has provided a new pose.
@@ -75,25 +87,28 @@ public:
         
         currentPose = pose;
         
-        MyoPose *myopose = [MyoPose new];
+        MyoPose *myoPose = [MyoPose new];
         if (pose.type() == myo::Pose::rest)
-            myopose.poseType = MyoPoseTypeRest;
+            myoPose.poseType = MyoPoseTypeRest;
         if (pose.type() == myo::Pose::fist)
-            myopose.poseType = MyoPoseTypeFist;
+            myoPose.poseType = MyoPoseTypeFist;
         if (pose.type() == myo::Pose::waveIn)
-            myopose.poseType = MyoPoseTypeWaveIn;
+            myoPose.poseType = MyoPoseTypeWaveIn;
         if (pose.type() == myo::Pose::waveOut)
-            myopose.poseType = MyoPoseTypeWaveOut;
+            myoPose.poseType = MyoPoseTypeWaveOut;
         if (pose.type() == myo::Pose::reserved1)
-            myopose.poseType = MyoPoseTypeReserved1;
+            myoPose.poseType = MyoPoseTypeReserved1;
         if (pose.type() == myo::Pose::fingersSpread)
-            myopose.poseType = MyoPoseTypeFingersSpread;
+            myoPose.poseType = MyoPoseTypeFingersSpread;
         if (pose.type() == myo::Pose::thumbToPinky)
-            myopose.poseType = MyoPoseTypePinkyToThumb;
+            myoPose.poseType = MyoPoseTypePinkyToThumb;
         
-        if ([_myo.delegate respondsToSelector:@selector(myo:onPose:timestamp:)]) {
-            [_myo.delegate myo:_myo onPose:myopose timestamp:timestamp];
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myo:onPose:timestamp:)]) {
+                [_myo.delegate myo:_myo onPose:myoPose timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a paired Myo recognizes that it is on an arm.
@@ -102,31 +117,39 @@ public:
         onArm = true;
         whichArm = arm;
         
-        if ([_myo.delegate respondsToSelector:@selector(myoOnArmRecognized:arm:direction:timestamp:)]) {
-            [_myo.delegate myoOnArmRecognized:_myo arm:getArm(arm) direction:getDirection(xDirection) timestamp:timestamp];
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnArmRecognized:arm:direction:timestamp:)]) {
+                [_myo.delegate myoOnArmRecognized:_myo arm:getArm(arm) direction:getDirection(xDirection) timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a paired Myo is moved or removed from the arm.
     void onArmLost(myo::Myo *myo, uint64_t timestamp) {
         
         onArm = false;
-        if ([_myo.delegate respondsToSelector:@selector(myoOnArmLost:timestamp:)]) {
-            [_myo.delegate myoOnArmLost:_myo timestamp:timestamp];
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnArmLost:timestamp:)]) {
+                [_myo.delegate myoOnArmLost:_myo timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a Myo has been paired.
     void onPair(Myo *myo, uint64_t timestamp, myo::FirmwareVersion firmwareVersion) {
         
-        if ([_myo.delegate respondsToSelector:@selector(myoOnPair:firmwareVersion:timestamp:)]) {
-            
-            MyoFirmwareVersion *fwVersion = [[MyoFirmwareVersion alloc] init];
-            fwVersion.firmwareVersion = [NSString stringWithFormat:@"Myo v%u.%u.%u.%u", firmwareVersion.firmwareVersionMajor, firmwareVersion.firmwareVersionMinor, firmwareVersion.firmwareVersionPatch, firmwareVersion.firmwareVersionHardwareRev];
-            
-            [_myo.delegate myoOnPair:_myo firmwareVersion:fwVersion timestamp:timestamp];
-            
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnPair:firmwareVersion:timestamp:)]) {
+                
+                MyoFirmwareVersion *fwVersion = [[MyoFirmwareVersion alloc] init];
+                fwVersion.firmwareVersion = [NSString stringWithFormat:@"Myo v%u.%u.%u.%u", firmwareVersion.firmwareVersionMajor, firmwareVersion.firmwareVersionMinor, firmwareVersion.firmwareVersionPatch, firmwareVersion.firmwareVersionHardwareRev];
+                
+                [_myo.delegate myoOnPair:_myo firmwareVersion:fwVersion timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a Myo has been unpaired.
@@ -139,30 +162,38 @@ public:
         pitch_w = 0;
         onArm = false;
         
-        if ([_myo.delegate respondsToSelector:@selector(myoOnUnpair:timestamp:)]) {
-            [_myo.delegate myoOnUnpair:_myo timestamp:timestamp];
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnUnpair:timestamp:)]) {
+                [_myo.delegate myoOnUnpair:_myo timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a paired Myo has been connected.
     void onConnect(Myo *myo, uint64_t timestamp, myo::FirmwareVersion firmwareVersion) {
         
-        if ([_myo.delegate respondsToSelector:@selector(myoOnConnect:firmwareVersion:timestamp:)]) {
-            
-            MyoFirmwareVersion *fwVersion = [[MyoFirmwareVersion alloc] init];
-            fwVersion.firmwareVersion = [NSString stringWithFormat:@"Myo v%u.%u.%u.%u", firmwareVersion.firmwareVersionMajor, firmwareVersion.firmwareVersionMinor, firmwareVersion.firmwareVersionPatch, firmwareVersion.firmwareVersionHardwareRev];
-            
-            [_myo.delegate myoOnConnect:_myo firmwareVersion:fwVersion timestamp:timestamp];
-            
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnConnect:firmwareVersion:timestamp:)]) {
+                
+                MyoFirmwareVersion *fwVersion = [[MyoFirmwareVersion alloc] init];
+                fwVersion.firmwareVersion = [NSString stringWithFormat:@"Myo v%u.%u.%u.%u", firmwareVersion.firmwareVersionMajor, firmwareVersion.firmwareVersionMinor, firmwareVersion.firmwareVersionPatch, firmwareVersion.firmwareVersionHardwareRev];
+                
+                [_myo.delegate myoOnConnect:_myo firmwareVersion:fwVersion timestamp:timestamp];
+            }
+        });
     }
     
     /// Called when a paired Myo has been disconnected.
     void onDisconnect(Myo *myo, uint64_t timestamp) {
         
-        if ([_myo.delegate respondsToSelector:@selector(myoOnDisconnect:timestamp:)]) {
-            [_myo.delegate myoOnDisconnect:_myo timestamp:timestamp];
-        }
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnDisconnect:timestamp:)]) {
+                [_myo.delegate myoOnDisconnect:_myo timestamp:timestamp];
+            }
+        });
     }
     
     
@@ -364,6 +395,11 @@ public:
     
 }
 
+- (void)requestRSSI {
+    
+    myo->requestRssi();
+}
+
 - (NSString *)getArmDescription:(MyoArm)arm {
     
     if (arm == MyoArmLeft) {
@@ -403,7 +439,7 @@ public:
     } else if (pose.poseType == MyoPoseTypePinkyToThumb) {
         return @"Pinky To Thumb";
     } else {
-        return @"Unrecognised";
+        return @"Unrecognized";
     }
 }
 

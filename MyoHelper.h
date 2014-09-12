@@ -104,6 +104,7 @@ typedef enum MyoVibrationType {
 
 - (void)stopUpdate;
 - (void)startUpdate;
+- (void)requestRSSI;
 - (NSString *)poseName:(MyoPose *)pose;
 - (BOOL)connectMyoWaiting:(int)milliseconds;
 - (NSString *)getArmDescription:(MyoArm)arm;
