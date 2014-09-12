@@ -5,8 +5,9 @@
 //  Copyright (c) 2014 Shiraz Omar. All rights reserved.
 //
 
-#import "MyoHelper.h"
 #import <myo/myo.hpp>
+
+#import "MyoHelper.h"
 
 
 @class Myo;
@@ -46,38 +47,83 @@ public:
         });
     }
     
-    /// Called when a paired Myo has provided new accelerometer data in units of g.
-    void onAccelerometerData(Myo *myo, uint64_t timestamp, const myo::Vector3<float>&accel) {
+    /// Called when a Myo has been paired.
+    void onPair(myo::Myo *myo, uint64_t timestamp, myo::FirmwareVersion firmwareVersion) {
         
-        MyoVector *vector = [[MyoVector alloc] initWithX:accel.x() y:accel.y() z:accel.z()];
+        NSString *firmware = [NSString stringWithFormat:@"Myo Firmware v%u.%u.%u.%u", firmwareVersion.firmwareVersionMajor, firmwareVersion.firmwareVersionMinor, firmwareVersion.firmwareVersionPatch, firmwareVersion.firmwareVersionHardwareRev];
+        
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myo:onAccelerometerDataWithVector:timestamp:)]) {
-                [_myo.delegate myo:_myo onAccelerometerDataWithVector:vector timestamp:timestamp];
+            if ([_myo.delegate respondsToSelector:@selector(myoOnPair:firmwareVersion:timestamp:)]) {
+                [_myo.delegate myoOnPair:_myo firmwareVersion:firmware timestamp:timestamp];
             }
         });
     }
     
-    /// Called when a paired Myo has provided new gyroscope data in units of deg/s.
-    void onGyroscopeData(Myo *myo, uint64_t timestamp, const myo::Vector3<float>&gyro) {
+    /// Called when a Myo has been unpaired.
+    void onUnpair(myo::Myo *myo, uint64_t timestamp) {
         
-        MyoVector *vector = [[MyoVector alloc] initWithX:gyro.x() y:gyro.y() z:gyro.z()];
+        // We've lost a Myo.
+        // Let's clean up some leftover state.
+        yaw_w = 0;
+        roll_w = 0;
+        pitch_w = 0;
+        onArm = false;
+        
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myo:onGyroscopeDataWithVector:timestamp:)]) {
-                [_myo.delegate myo:_myo onGyroscopeDataWithVector:vector timestamp:timestamp];
+            if ([_myo.delegate respondsToSelector:@selector(myoOnUnpair:timestamp:)]) {
+                [_myo.delegate myoOnUnpair:_myo timestamp:timestamp];
             }
         });
     }
     
-    /// Called when a paired Myo has provided a new RSSI value.
-    /// @see Myo::requestRssi() to request an RSSI value from the Myo.
-    void onRssi(Myo *myo, uint64_t timestamp, int8_t rssi) {
+    /// Called when a paired Myo has been connected.
+    void onConnect(myo::Myo *myo, uint64_t timestamp, myo::FirmwareVersion firmwareVersion) {
+        
+        NSString *firmware = [NSString stringWithFormat:@"Myo Firmware v%u.%u.%u.%u", firmwareVersion.firmwareVersionMajor, firmwareVersion.firmwareVersionMinor, firmwareVersion.firmwareVersionPatch, firmwareVersion.firmwareVersionHardwareRev];
         
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myo:onRssi:timestamp:)]) {
-                [_myo.delegate myo:_myo onRssi:rssi timestamp:timestamp];
+            if ([_myo.delegate respondsToSelector:@selector(myoOnConnect:firmwareVersion:timestamp:)]) {
+                [_myo.delegate myoOnConnect:_myo firmwareVersion:firmware timestamp:timestamp];
+            }
+        });
+    }
+    
+    /// Called when a paired Myo has been disconnected.
+    void onDisconnect(myo::Myo *myo, uint64_t timestamp) {
+        
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnDisconnect:timestamp:)]) {
+                [_myo.delegate myoOnDisconnect:_myo timestamp:timestamp];
+            }
+        });
+    }
+    
+    /// Called when a paired Myo recognizes that it is on an arm.
+    void onArmRecognized(myo::Myo *myo, uint64_t timestamp, myo::Arm arm, myo::XDirection xDirection) {
+        
+        onArm = true;
+        whichArm = arm;
+        
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnArmRecognized:arm:direction:timestamp:)]) {
+                [_myo.delegate myoOnArmRecognized:_myo arm:getArm(arm) direction:getDirection(xDirection) timestamp:timestamp];
+            }
+        });
+    }
+    
+    /// Called when a paired Myo is moved or removed from the arm.
+    void onArmLost(myo::Myo *myo, uint64_t timestamp) {
+        
+        onArm = false;
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnArmLost:timestamp:)]) {
+                [_myo.delegate myoOnArmLost:_myo timestamp:timestamp];
             }
         });
     }
@@ -111,87 +157,40 @@ public:
         });
     }
     
-    /// Called when a paired Myo recognizes that it is on an arm.
-    void onArmRecognized(myo::Myo *myo, uint64_t timestamp, myo::Arm arm, myo::XDirection xDirection) {
+    /// Called when a paired Myo has provided new accelerometer data in units of g.
+    void onAccelerometerData(myo::Myo *myo, uint64_t timestamp, const myo::Vector3<float>&accel) {
         
-        onArm = true;
-        whichArm = arm;
+        MyoVector *vector = [[MyoVector alloc] initWithX:accel.x() y:accel.y() z:accel.z()];
         
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myoOnArmRecognized:arm:direction:timestamp:)]) {
-                [_myo.delegate myoOnArmRecognized:_myo arm:getArm(arm) direction:getDirection(xDirection) timestamp:timestamp];
+            if ([_myo.delegate respondsToSelector:@selector(myo:onAccelerometerDataWithVector:timestamp:)]) {
+                [_myo.delegate myo:_myo onAccelerometerDataWithVector:vector timestamp:timestamp];
             }
         });
     }
     
-    /// Called when a paired Myo is moved or removed from the arm.
-    void onArmLost(myo::Myo *myo, uint64_t timestamp) {
+    /// Called when a paired Myo has provided new gyroscope data in units of deg/s.
+    void onGyroscopeData(myo::Myo *myo, uint64_t timestamp, const myo::Vector3<float>&gyro) {
         
-        onArm = false;
+        MyoVector *vector = [[MyoVector alloc] initWithX:gyro.x() y:gyro.y() z:gyro.z()];
+        
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myoOnArmLost:timestamp:)]) {
-                [_myo.delegate myoOnArmLost:_myo timestamp:timestamp];
+            if ([_myo.delegate respondsToSelector:@selector(myo:onGyroscopeDataWithVector:timestamp:)]) {
+                [_myo.delegate myo:_myo onGyroscopeDataWithVector:vector timestamp:timestamp];
             }
         });
     }
     
-    /// Called when a Myo has been paired.
-    void onPair(Myo *myo, uint64_t timestamp, myo::FirmwareVersion firmwareVersion) {
+    /// Called when a paired Myo has provided a new RSSI value.
+    /// @see Myo::requestRssi() to request an RSSI value from the Myo.
+    void onRssi(myo::Myo *myo, uint64_t timestamp, int8_t rssi) {
         
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myoOnPair:firmwareVersion:timestamp:)]) {
-                
-                MyoFirmwareVersion *fwVersion = [[MyoFirmwareVersion alloc] init];
-                fwVersion.firmwareVersion = [NSString stringWithFormat:@"Myo v%u.%u.%u.%u", firmwareVersion.firmwareVersionMajor, firmwareVersion.firmwareVersionMinor, firmwareVersion.firmwareVersionPatch, firmwareVersion.firmwareVersionHardwareRev];
-                
-                [_myo.delegate myoOnPair:_myo firmwareVersion:fwVersion timestamp:timestamp];
-            }
-        });
-    }
-    
-    /// Called when a Myo has been unpaired.
-    void onUnpair(Myo *myo, uint64_t timestamp) {
-        
-        // We've lost a Myo.
-        // Let's clean up some leftover state.
-        yaw_w = 0;
-        roll_w = 0;
-        pitch_w = 0;
-        onArm = false;
-        
-        dispatch_async(dispatch_get_main_queue(), ^(void) {
-            // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myoOnUnpair:timestamp:)]) {
-                [_myo.delegate myoOnUnpair:_myo timestamp:timestamp];
-            }
-        });
-    }
-    
-    /// Called when a paired Myo has been connected.
-    void onConnect(Myo *myo, uint64_t timestamp, myo::FirmwareVersion firmwareVersion) {
-        
-        dispatch_async(dispatch_get_main_queue(), ^(void) {
-            // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myoOnConnect:firmwareVersion:timestamp:)]) {
-                
-                MyoFirmwareVersion *fwVersion = [[MyoFirmwareVersion alloc] init];
-                fwVersion.firmwareVersion = [NSString stringWithFormat:@"Myo v%u.%u.%u.%u", firmwareVersion.firmwareVersionMajor, firmwareVersion.firmwareVersionMinor, firmwareVersion.firmwareVersionPatch, firmwareVersion.firmwareVersionHardwareRev];
-                
-                [_myo.delegate myoOnConnect:_myo firmwareVersion:fwVersion timestamp:timestamp];
-            }
-        });
-    }
-    
-    /// Called when a paired Myo has been disconnected.
-    void onDisconnect(Myo *myo, uint64_t timestamp) {
-        
-        dispatch_async(dispatch_get_main_queue(), ^(void) {
-            // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myoOnDisconnect:timestamp:)]) {
-                [_myo.delegate myoOnDisconnect:_myo timestamp:timestamp];
+            if ([_myo.delegate respondsToSelector:@selector(myo:onRssi:timestamp:)]) {
+                [_myo.delegate myo:_myo onRssi:rssi timestamp:timestamp];
             }
         });
     }

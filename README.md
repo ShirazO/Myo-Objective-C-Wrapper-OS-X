@@ -39,8 +39,8 @@ You need to add myo.framework from the Myo SDK to the Project, instructions for 
     - (void)myo:(Myo *)myo onPose:(MyoPose *)pose timestamp:(uint64_t)timestamp;
     - (void)myo:(Myo *)myo onGyroscopeDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
     - (void)myo:(Myo *)myo onAccelerometerDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
-    - (void)myoOnPair:(Myo *)myo firmwareVersion:(MyoFirmwareVersion *)firmware timestamp:(uint64_t)timestamp;
-    - (void)myoOnConnect:(Myo *)myo firmwareVersion:(MyoFirmwareVersion *)firmware timestamp:(uint64_t)timestamp;
+    - (void)myoOnPair:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
+    - (void)myoOnConnect:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
     - (void)myoOnArmRecognized:(Myo *)myo arm:(MyoArm)arm direction:(MyoDirection)direction timestamp:(uint64_t)timestamp;
     - (void)myo:(Myo *)myo onOrientationDataWithRoll:(int)roll pitch:(int)pitch yaw:(int)yaw timestamp:(uint64_t)timestamp;
     

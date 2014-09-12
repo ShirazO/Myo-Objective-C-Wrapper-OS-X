@@ -52,14 +52,6 @@ typedef enum MyoPoseType {
 @end
 
 
-#pragma mark - MyoFirmware
-@interface MyoFirmwareVersion : NSObject
-
-@property (strong) NSString *firmwareVersion;
-
-@end
-
-
 #pragma mark - MyoDelegate
 typedef enum MyoArm {
     MyoArmLeft = 0,
@@ -83,8 +75,8 @@ typedef enum MyoDirection {
 - (void)myo:(Myo *)myo onPose:(MyoPose *)pose timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onGyroscopeDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onAccelerometerDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
-- (void)myoOnPair:(Myo *)myo firmwareVersion:(MyoFirmwareVersion *)firmware timestamp:(uint64_t)timestamp;
-- (void)myoOnConnect:(Myo *)myo firmwareVersion:(MyoFirmwareVersion *)firmware timestamp:(uint64_t)timestamp;
+- (void)myoOnPair:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
+- (void)myoOnConnect:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
 - (void)myoOnArmRecognized:(Myo *)myo arm:(MyoArm)arm direction:(MyoDirection)direction timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onOrientationDataWithRoll:(int)roll pitch:(int)pitch yaw:(int)yaw timestamp:(uint64_t)timestamp;
 
