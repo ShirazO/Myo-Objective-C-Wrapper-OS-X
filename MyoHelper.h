@@ -1,6 +1,5 @@
 //
 //  MyoHelper.h
-//  MyoProfiler
 //
 //  Created by Shiraz Omar on 03/09/2014.
 //  Copyright (c) 2014 Shiraz Omar. All rights reserved.
