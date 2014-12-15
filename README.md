@@ -24,7 +24,7 @@ You need to add myo.framework from the Myo SDK to the Project, instructions for 
       dispatch_async(dispatch_get_main_queue(), ^(void) {
           
           self.myo.updateTime = 1000; // Set the Update Time
-          [self.myo startUpdate]; // Start Getting Updates From Myo (This Command Runs on Background Thread In Implemenation)
+          [self.myo startUpdate]; // Start Getting Updates From Myo (This Command Runs on Background Thread In Implementation)
       });
     });
     
@@ -32,16 +32,18 @@ You need to add myo.framework from the Myo SDK to the Project, instructions for 
     @interface ViewController : UIViewController <MyoDelegate>
     
     // Implement The Following Optional Delegate Methods To Handle The Events Triggered By The Listener
-    - (void)myoOnUnpair:(Myo *)myo timestamp:(uint64_t)timestamp;
-    - (void)myoOnArmLost:(Myo *)myo timestamp:(uint64_t)timestamp;
-    - (void)myoOnDisconnect:(Myo *)myo timestamp:(uint64_t)timestamp;
-    - (void)myo:(Myo *)myo onRssi:(int8_t)rssi timestamp:(uint64_t)timestamp;
-    - (void)myo:(Myo *)myo onPose:(MyoPose *)pose timestamp:(uint64_t)timestamp;
-    - (void)myo:(Myo *)myo onGyroscopeDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
-    - (void)myo:(Myo *)myo onAccelerometerDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
-    - (void)myoOnPair:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
-    - (void)myoOnConnect:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
-    - (void)myoOnArmRecognized:(Myo *)myo arm:(MyoArm)arm direction:(MyoDirection)direction timestamp:(uint64_t)timestamp;
-    - (void)myo:(Myo *)myo onOrientationDataWithRoll:(int)roll pitch:(int)pitch yaw:(int)yaw timestamp:(uint64_t)timestamp;
+	- (void)myoOnLock:(Myo *)myo timestamp:(uint64_t)timestamp;
+	- (void)myoOnUnlock:(Myo *)myo timestamp:(uint64_t)timestamp;
+	- (void)myoOnUnpair:(Myo *)myo timestamp:(uint64_t)timestamp;
+	- (void)myoOnArmUnsync:(Myo *)myo timestamp:(uint64_t)timestamp;
+	- (void)myoOnDisconnect:(Myo *)myo timestamp:(uint64_t)timestamp;
+	- (void)myo:(Myo *)myo onRssi:(int8_t)rssi timestamp:(uint64_t)timestamp;
+	- (void)myo:(Myo *)myo onPose:(MyoPose *)pose timestamp:(uint64_t)timestamp;
+	- (void)myoOnPair:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
+	- (void)myoOnConnect:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
+	- (void)myo:(Myo *)myo onGyroscopeDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
+	- (void)myo:(Myo *)myo onAccelerometerDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
+	- (void)myoOnArmSync:(Myo *)myo arm:(MyoArm)arm direction:(MyoDirection)direction timestamp:(uint64_t)timestamp;
+	- (void)myo:(Myo *)myo onOrientationDataWithRoll:(int)roll pitch:(int)pitch yaw:(int)yaw timestamp:(uint64_t)timestamp;
     
 *Based on Myo-ObjectiveC-OSX by Kemcake

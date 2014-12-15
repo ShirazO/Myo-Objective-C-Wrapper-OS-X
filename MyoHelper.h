@@ -1,5 +1,6 @@
 //
 //  MyoHelper.h
+//  MyoProfiler
 //
 //  Created by Shiraz Omar on 03/09/2014.
 //  Copyright (c) 2014 Shiraz Omar. All rights reserved.
@@ -18,8 +19,8 @@ typedef enum MyoPoseType {
     MyoPoseTypeWaveIn = 2,
     MyoPoseTypeWaveOut = 3,
     MyoPoseTypeFingersSpread = 4,
-    MyoPoseTypeReserved1 = 5,
-    MyoPoseTypePinkyToThumb = 6
+    MyoPoseTypeDoubleTap = 5,
+    MyoPoseTypeUnknown = 0xffff
 } MyoPoseType;
 
 @interface MyoPose : NSObject
@@ -68,19 +69,35 @@ typedef enum MyoDirection {
 @protocol MyoDelegate <NSObject>
 
 @optional
+- (void)myoOnLock:(Myo *)myo timestamp:(uint64_t)timestamp;
+- (void)myoOnUnlock:(Myo *)myo timestamp:(uint64_t)timestamp;
 - (void)myoOnUnpair:(Myo *)myo timestamp:(uint64_t)timestamp;
-- (void)myoOnArmLost:(Myo *)myo timestamp:(uint64_t)timestamp;
+- (void)myoOnArmUnsync:(Myo *)myo timestamp:(uint64_t)timestamp;
 - (void)myoOnDisconnect:(Myo *)myo timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onRssi:(int8_t)rssi timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onPose:(MyoPose *)pose timestamp:(uint64_t)timestamp;
-- (void)myo:(Myo *)myo onGyroscopeDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
-- (void)myo:(Myo *)myo onAccelerometerDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
 - (void)myoOnPair:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
 - (void)myoOnConnect:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
-- (void)myoOnArmRecognized:(Myo *)myo arm:(MyoArm)arm direction:(MyoDirection)direction timestamp:(uint64_t)timestamp;
+- (void)myo:(Myo *)myo onGyroscopeDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
+- (void)myo:(Myo *)myo onAccelerometerDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
+- (void)myoOnArmSync:(Myo *)myo arm:(MyoArm)arm direction:(MyoDirection)direction timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onOrientationDataWithRoll:(int)roll pitch:(int)pitch yaw:(int)yaw timestamp:(uint64_t)timestamp;
 
 @end
+
+
+#pragma mark - MyoUnlockType
+typedef enum MyoUnlockType {
+    MyoUnlockTypeTimed = 0,
+    MyoUnlockTypeHold = 1,
+} MyoUnlockType;
+
+
+#pragma mark - MyoLockingPolicy
+typedef enum MyoLockingPolicy {
+    MyoLockingPolicyNone,
+    MyoLockingPolicyStandard,
+} MyoLockingPolicy;
 
 
 #pragma mark - MyoVibrationType
@@ -94,13 +111,16 @@ typedef enum MyoVibrationType {
 #pragma mark - Myo
 @interface Myo : NSObject
 
+- (void)lockMyo;
 - (void)stopUpdate;
 - (void)startUpdate;
 - (void)requestRSSI;
 - (NSString *)poseName:(MyoPose *)pose;
+- (void)unlockMyo:(MyoUnlockType)unlockType;
 - (BOOL)connectMyoWaiting:(int)milliseconds;
 - (NSString *)getArmDescription:(MyoArm)arm;
 - (void)vibrateWithType:(MyoVibrationType)type;
+- (void)setMyoLockingPolicy:(MyoLockingPolicy)lockingPolicy;
 - (NSString *)getDirectionDescription:(MyoDirection)direction;
 - (instancetype)initWithApplicationIdentifier:(NSString *)identifier;
 

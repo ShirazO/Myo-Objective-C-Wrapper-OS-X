@@ -1,5 +1,6 @@
 //
 //  MyoHelper.mm
+//  MyoProfiler
 //
 //  Created by Shiraz Omar on 03/09/2014.
 //  Copyright (c) 2014 Shiraz Omar. All rights reserved.
@@ -17,24 +18,26 @@ class DataCollector : public myo::DeviceListener {
     
 public:
     
-    DataCollector() : onArm(false), roll_w(0), pitch_w(0), yaw_w(0), currentPose() {}
+    DataCollector() : onArm(false), isUnlocked(false), roll_w(0), pitch_w(0), yaw_w(0), currentPose() {}
     
     
-    /// Called when a paired Myo has provided new orientation data.
+    // onOrientationData() is called whenever the Myo device provides its current orientation, which is represented as a unit quaternion.
     void onOrientationData(myo::Myo *myo, uint64_t timestamp, const myo::Quaternion<float>&quat) {
         
         using std::atan2;
         using std::asin;
         using std::sqrt;
+        using std::max;
+        using std::min;
         
         // Calculate Euler angles (roll, pitch, and yaw) from the unit quaternion.
         float roll = atan2(2.0f * (quat.w() * quat.x() + quat.y() * quat.z()),
                            1.0f - 2.0f * (quat.x() * quat.x() + quat.y() * quat.y()));
-        float pitch = asin(2.0f * (quat.w() * quat.y() - quat.z() * quat.x()));
+        float pitch = asin(max(-1.0f, min(1.0f, 2.0f * (quat.w() * quat.y() - quat.z() * quat.x()))));
         float yaw = atan2(2.0f * (quat.w() * quat.z() + quat.x() * quat.y()),
                           1.0f - 2.0f * (quat.y() * quat.y() + quat.z() * quat.z()));
         
-        // Convert the floating point angles in radians to a scale from 0 to 20.
+        // Convert the floating point angles in radians to a scale from 0 to 18.
         roll_w = static_cast<int>((roll + (float)M_PI)/(M_PI * 2.0f) * 18);
         pitch_w = static_cast<int>((pitch + (float)M_PI/2.0f)/M_PI * 18);
         yaw_w = static_cast<int>((yaw + (float)M_PI)/(M_PI * 2.0f) * 18);
@@ -63,12 +66,12 @@ public:
     /// Called when a Myo has been unpaired.
     void onUnpair(myo::Myo *myo, uint64_t timestamp) {
         
-        // We've lost a Myo.
-        // Let's clean up some leftover state.
+        // Myo Lost. Cleanup
         yaw_w = 0;
         roll_w = 0;
         pitch_w = 0;
         onArm = false;
+        isUnlocked = false;
         
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
@@ -102,36 +105,51 @@ public:
         });
     }
     
-    /// Called when a paired Myo recognizes that it is on an arm.
-    void onArmRecognized(myo::Myo *myo, uint64_t timestamp, myo::Arm arm, myo::XDirection xDirection) {
+    // onArmSync() is called whenever Myo has recognized a Sync Gesture after someone has put it on their arm. This lets Myo know which arm it's on and which way it's facing.
+    void onArmSync(myo::Myo *myo, uint64_t timestamp, myo::Arm arm, myo::XDirection xDirection) {
         
         onArm = true;
         whichArm = arm;
         
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myoOnArmRecognized:arm:direction:timestamp:)]) {
-                [_myo.delegate myoOnArmRecognized:_myo arm:getArm(arm) direction:getDirection(xDirection) timestamp:timestamp];
+            if ([_myo.delegate respondsToSelector:@selector(myoOnArmSync:arm:direction:timestamp:)]) {
+                [_myo.delegate myoOnArmSync:_myo arm:getArm(arm) direction:getDirection(xDirection) timestamp:timestamp];
             }
         });
     }
     
-    /// Called when a paired Myo is moved or removed from the arm.
-    void onArmLost(myo::Myo *myo, uint64_t timestamp) {
+    // onArmUnsync() is called whenever Myo has detected that it was moved from a stable position on a person's arm after it recognized the arm. Typically this happens when someone takes Myo off of their arm, but it can also happen when Myo is moved around on the arm.
+    void onArmUnsync(myo::Myo *myo, uint64_t timestamp) {
         
         onArm = false;
+        
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
-            if ([_myo.delegate respondsToSelector:@selector(myoOnArmLost:timestamp:)]) {
-                [_myo.delegate myoOnArmLost:_myo timestamp:timestamp];
+            if ([_myo.delegate respondsToSelector:@selector(myoOnArmUnsync:timestamp:)]) {
+                [_myo.delegate myoOnArmUnsync:_myo timestamp:timestamp];
             }
         });
     }
     
-    /// Called when a paired Myo has provided a new pose.
+    // onPose() is called whenever the Myo detects that the person wearing it has changed their pose, for example, making a fist, or not making a fist anymore.
     void onPose(myo::Myo *myo, uint64_t timestamp, myo::Pose pose) {
         
         currentPose = pose;
+        
+        if (pose != myo::Pose::unknown && pose != myo::Pose::rest) {
+            // Tell the Myo to stay unlocked until told otherwise. We do that here so you can hold the poses without the
+            // Myo becoming locked.
+            myo->unlock(myo::Myo::unlockHold);
+            
+            // Notify the Myo that the pose has resulted in an action, in this case changing
+            // the text on the screen. The Myo will vibrate.
+            myo->notifyUserAction();
+        } else {
+            // Tell the Myo to stay unlocked only for a short period. This allows the Myo to stay unlocked while poses
+            // are being performed, but lock after inactivity.
+            myo->unlock(myo::Myo::unlockTimed); // ** Change This To Prevent Timed Locking on Rest Pose **
+        }
         
         MyoPose *myoPose = [MyoPose new];
         if (pose.type() == myo::Pose::rest)
@@ -142,17 +160,43 @@ public:
             myoPose.poseType = MyoPoseTypeWaveIn;
         if (pose.type() == myo::Pose::waveOut)
             myoPose.poseType = MyoPoseTypeWaveOut;
-        if (pose.type() == myo::Pose::reserved1)
-            myoPose.poseType = MyoPoseTypeReserved1;
-        if (pose.type() == myo::Pose::fingersSpread)
+        if (pose.type() == myo::Pose::doubleTap)
+            myoPose.poseType = MyoPoseTypeDoubleTap;
+        if (pose.type() == myo::Pose::doubleTap)
             myoPose.poseType = MyoPoseTypeFingersSpread;
-        if (pose.type() == myo::Pose::thumbToPinky)
-            myoPose.poseType = MyoPoseTypePinkyToThumb;
+        if (pose.type() == myo::Pose::unknown)
+            myoPose.poseType = MyoPoseTypeUnknown;
         
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
             if ([_myo.delegate respondsToSelector:@selector(myo:onPose:timestamp:)]) {
                 [_myo.delegate myo:_myo onPose:myoPose timestamp:timestamp];
+            }
+        });
+    }
+    
+    // onLock() is called whenever Myo has become locked. No pose events will be sent until the Myo is unlocked again.
+    void onLock(myo::Myo *myo, uint64_t timestamp) {
+        
+        isUnlocked = false;
+        
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnLock:timestamp:)]) {
+                [_myo.delegate myoOnLock:_myo timestamp:timestamp];
+            }
+        });
+    }
+    
+    // onUnlock() is called whenever Myo has become unlocked, and will start delivering pose events.
+    void onUnlock(myo::Myo *myo, uint64_t timestamp) {
+        
+        isUnlocked = true;
+        
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myoOnUnlock:timestamp:)]) {
+                [_myo.delegate myoOnUnlock:_myo timestamp:timestamp];
             }
         });
     }
@@ -226,9 +270,12 @@ public:
     }
     
     
-    // These values are set by onArmRecognized() and onArmLost() above.
+    // These values are set by onArmSync() and onArmUnsync() above.
     bool onArm;
     myo::Arm whichArm;
+    
+    // This is set by onUnlocked() and onLocked() above.
+    bool isUnlocked;
     
     // These values are set by onOrientationData() and onPose() above.
     Myo *_myo;
@@ -357,7 +404,7 @@ public:
     
     update = true;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-    
+        
         try {
             
             //Background Thread
@@ -376,6 +423,29 @@ public:
 - (void)stopUpdate {
     
     update = false;
+}
+
+- (void)lockMyo {
+    
+    myo->lock();
+}
+
+- (void)unlockMyo:(MyoUnlockType)unlockType {
+    
+    if (unlockType == MyoUnlockTypeHold) {
+        myo->unlock(myo::Myo::unlockHold);
+    } else {
+        myo->unlock(myo::Myo::unlockTimed);
+    }
+}
+
+- (void)setMyoLockingPolicy:(MyoLockingPolicy)lockingPolicy {
+    
+    if (lockingPolicy == MyoLockingPolicyNone) {
+        hub.setLockingPolicy(myo::Hub::lockingPolicyNone);
+    } else {
+        hub.setLockingPolicy(myo::Hub::lockingPolicyStandard);
+    }
 }
 
 - (void)vibrateWithType:(MyoVibrationType)type {
@@ -433,10 +503,10 @@ public:
         return @"Wave In";
     } else if (pose.poseType == MyoPoseTypeWaveOut) {
         return @"Wave Out";
-    } else if (pose.poseType == MyoPoseTypeReserved1) {
-        return @"Reserved 1";
-    } else if (pose.poseType == MyoPoseTypePinkyToThumb) {
-        return @"Pinky To Thumb";
+    } else if (pose.poseType == MyoPoseTypeDoubleTap) {
+        return @"Double Tap";
+    } else if (pose.poseType == MyoPoseTypeUnknown) {
+        return @"Unrecognized";
     } else {
         return @"Unrecognized";
     }
