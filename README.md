@@ -39,11 +39,12 @@ You need to add myo.framework from the Myo SDK to the Project, instructions for 
 	- (void)myoOnDisconnect:(Myo *)myo timestamp:(uint64_t)timestamp;
 	- (void)myo:(Myo *)myo onRssi:(int8_t)rssi timestamp:(uint64_t)timestamp;
 	- (void)myo:(Myo *)myo onPose:(MyoPose *)pose timestamp:(uint64_t)timestamp;
+	- (void)myo:(Myo *)myo onEmgData:(int *)emgData timestamp:(uint64_t)timestamp;
 	- (void)myoOnPair:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
 	- (void)myoOnConnect:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
 	- (void)myo:(Myo *)myo onGyroscopeDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
 	- (void)myo:(Myo *)myo onAccelerometerDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
 	- (void)myoOnArmSync:(Myo *)myo arm:(MyoArm)arm direction:(MyoDirection)direction timestamp:(uint64_t)timestamp;
-	- (void)myo:(Myo *)myo onOrientationDataWithRoll:(int)roll pitch:(int)pitch yaw:(int)yaw timestamp:(uint64_t)timestamp;
+	- (void)myo:(Myo *)myo onOrientationDataWithRoll:(float)roll pitch:(float)pitch yaw:(float)yaw timestamp:(uint64_t)timestamp;
     
 *Based on Myo-ObjectiveC-OSX by Kemcake

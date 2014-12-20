@@ -17,7 +17,7 @@ class DataCollector : public myo::DeviceListener {
     
 public:
     
-    DataCollector() : onArm(false), isUnlocked(false), roll_w(0), pitch_w(0), yaw_w(0), currentPose() {}
+    DataCollector() : onArm(false), isUnlocked(false), roll_w(0), pitch_w(0), yaw_w(0), currentPose(), emgSamples() {}
     
     
     // onOrientationData() is called whenever the Myo device provides its current orientation, which is represented as a unit quaternion.
@@ -71,6 +71,7 @@ public:
         pitch_w = 0;
         onArm = false;
         isUnlocked = false;
+        std::fill_n(emgSamples, 8, 0);
         
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             // Fire Delegate Method On Main Thread
@@ -137,14 +138,13 @@ public:
         currentPose = pose;
         
         if (pose != myo::Pose::unknown && pose != myo::Pose::rest) {
+            
             // Tell the Myo to stay unlocked until told otherwise. We do that here so you can hold the poses without the
             // Myo becoming locked.
             myo->unlock(myo::Myo::unlockHold);
             
-            // Notify the Myo that the pose has resulted in an action, in this case changing
-            // the text on the screen. The Myo will vibrate.
-            myo->notifyUserAction();
         } else {
+            
             // Tell the Myo to stay unlocked only for a short period. This allows the Myo to stay unlocked while poses
             // are being performed, but lock after inactivity.
             myo->unlock(myo::Myo::unlockTimed); // ** Change This To Prevent Timed Locking on Rest Pose **
@@ -238,6 +238,21 @@ public:
         });
     }
     
+    // onEmgData() is called whenever a paired Myo has provided new EMG data, and EMG streaming is enabled.
+    void onEmgData(myo::Myo* myo, uint64_t timestamp, const int8_t* emg)
+    {
+        for (int i = 0; i < 8; i++) {
+            emgSamples[i] = static_cast<int>(emg[i]);
+        }
+        
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            // Fire Delegate Method On Main Thread
+            if ([_myo.delegate respondsToSelector:@selector(myo:onEmgData:timestamp:)]) {
+                [_myo.delegate myo:_myo onEmgData:emgSamples timestamp:timestamp];
+            }
+        });
+    }
+    
     
     // Utility Methods
     // Converts myo::Arm to MyoArm
@@ -279,7 +294,10 @@ public:
     // These values are set by onOrientationData() and onPose() above.
     Myo *_myo;
     myo::Pose currentPose;
-    int roll_w, pitch_w, yaw_w;
+    float roll_w, pitch_w, yaw_w;
+    
+    // The values of this array is set by onEmgData() above.
+    int emgSamples[8];
 };
 
 
@@ -377,6 +395,11 @@ public:
 
 - (BOOL)connectMyoWaiting:(int)milliseconds {
     
+    return [self connectMyoWaiting:milliseconds enableEmg:false];
+}
+
+- (BOOL)connectMyoWaiting:(int)milliseconds enableEmg:(BOOL)emg {
+    
     try {
         
         myo = hub.waitForMyo(milliseconds);
@@ -387,6 +410,11 @@ public:
             return false;
         }
         NSLog(@"Connected to a Myo Armband!");
+        
+        if (emg) {
+            [self enableEmgData];
+        }
+        
         collector._myo = self;
         hub.addListener(&collector);
         
@@ -403,7 +431,7 @@ public:
     
     update = true;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-        
+    
         try {
             
             //Background Thread
@@ -466,6 +494,25 @@ public:
 - (void)requestRSSI {
     
     myo->requestRssi();
+}
+
+- (void)enableEmgData {
+    
+    // Enable EMG streaming on the Myo
+    myo->setStreamEmg(myo::Myo::streamEmgEnabled);
+}
+
+- (void)disableEmgData {
+    
+    // Disable EMG streaming on the Myo
+    myo->setStreamEmg(myo::Myo::streamEmgDisabled);
+}
+
+- (void)showUserNotification {
+    
+    // Notify the Myo that the pose has resulted in an action, in this case changing
+    // the text on the screen. The Myo will vibrate.
+    myo->notifyUserAction();
 }
 
 - (NSString *)getArmDescription:(MyoArm)arm {

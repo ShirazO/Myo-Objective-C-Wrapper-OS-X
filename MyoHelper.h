@@ -75,12 +75,13 @@ typedef enum MyoDirection {
 - (void)myoOnDisconnect:(Myo *)myo timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onRssi:(int8_t)rssi timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onPose:(MyoPose *)pose timestamp:(uint64_t)timestamp;
+- (void)myo:(Myo *)myo onEmgData:(int *)emgData timestamp:(uint64_t)timestamp;
 - (void)myoOnPair:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
 - (void)myoOnConnect:(Myo *)myo firmwareVersion:(NSString *)firmware timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onGyroscopeDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
 - (void)myo:(Myo *)myo onAccelerometerDataWithVector:(MyoVector *)vector timestamp:(uint64_t)timestamp;
 - (void)myoOnArmSync:(Myo *)myo arm:(MyoArm)arm direction:(MyoDirection)direction timestamp:(uint64_t)timestamp;
-- (void)myo:(Myo *)myo onOrientationDataWithRoll:(int)roll pitch:(int)pitch yaw:(int)yaw timestamp:(uint64_t)timestamp;
+- (void)myo:(Myo *)myo onOrientationDataWithRoll:(float)roll pitch:(float)pitch yaw:(float)yaw timestamp:(uint64_t)timestamp;
 
 @end
 
@@ -103,7 +104,8 @@ typedef enum MyoLockingPolicy {
 typedef enum MyoVibrationType {
     MyoVibrationTypeShort = 0,
     MyoVibrationTypeMedium = 1,
-    MyoVibrationTypeLong = 2
+    MyoVibrationTypeLong = 2,
+    MyoVibrationTypeNone = 3
 } MyoVibrationType;
 
 
@@ -114,6 +116,9 @@ typedef enum MyoVibrationType {
 - (void)stopUpdate;
 - (void)startUpdate;
 - (void)requestRSSI;
+- (void)enableEmgData;
+- (void)disableEmgData;
+- (void)showUserNotification; // Causes Small Vibration
 - (NSString *)poseName:(MyoPose *)pose;
 - (void)unlockMyo:(MyoUnlockType)unlockType;
 - (BOOL)connectMyoWaiting:(int)milliseconds;
@@ -121,6 +126,7 @@ typedef enum MyoVibrationType {
 - (void)vibrateWithType:(MyoVibrationType)type;
 - (void)setMyoLockingPolicy:(MyoLockingPolicy)lockingPolicy;
 - (NSString *)getDirectionDescription:(MyoDirection)direction;
+- (BOOL)connectMyoWaiting:(int)milliseconds enableEmg:(BOOL)emg;
 - (instancetype)initWithApplicationIdentifier:(NSString *)identifier;
 
 @property (nonatomic) int updateTime;
