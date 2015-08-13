@@ -161,7 +161,7 @@ public:
             myoPose.poseType = MyoPoseTypeWaveOut;
         if (pose.type() == myo::Pose::doubleTap)
             myoPose.poseType = MyoPoseTypeDoubleTap;
-        if (pose.type() == myo::Pose::doubleTap)
+        if (pose.type() == myo::Pose::fingersSpread)
             myoPose.poseType = MyoPoseTypeFingersSpread;
         if (pose.type() == myo::Pose::unknown)
             myoPose.poseType = MyoPoseTypeUnknown;
